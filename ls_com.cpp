@@ -235,8 +235,8 @@ void cursor_and_flag(struct dirent **thefile,char path[],int n){
                                                 
                                                 new_x=new_x+1;
                                                 //cout<<"new_x: "<<new_x;
-                                                pos_of_x=35;
-                                                ls_command(path,new_x-35);
+                                                pos_of_x=34;
+                                                ls_command(path,new_x-34);
                                             } 
                                         }
                                        break;
