@@ -14,6 +14,7 @@
 #include <stack>
 #include <sys/ioctl.h>
 #include <linux/limits.h>
+#include "copy_test.h"
 #define gotoxy(x,y) printf("%s%d%s%d%s","\033[",x,";",y,"H");
 using namespace std;
 struct winsize window;
@@ -38,7 +39,7 @@ int main()
 {   char cur[1];
     cur[0]='.'; 
     //printf("\033[H\033[J");
-    
+    getchar();
         ls_command(cur,0);
    
     return 0;
@@ -422,7 +423,7 @@ void command_mode(string buff){
         new_settings.c_lflag &= ~ICANON;
         tcsetattr(fileno(input), TCSANOW, &new_settings);
         ch=getchar();
-        if(ch!=27){
+        if(ch!=27&& ch!=127 && ch!='\n'){
             cout<<ch;
             buffer[i++]=ch;
             buffer[i]='\0';
@@ -430,21 +431,19 @@ void command_mode(string buff){
         }
         //backspace
         if(ch==127){
-            //fflush(stdout);
-
+            // if(i>0){
+            //     buffer[i-2]='\0';
+            //     cout<<"\033["<<1<<"K";
+            //     cout<<"\033["<<38<<";"<<0<<"H"<<"Command Mode :"<<buffer;   
+            //     i--;
+            // }
             if(i>0){
-                buffer[i-2]='\0';
-               // cout<<"\033["<<38<<";"<<10<<"H"<<buffer;
-                cout<<"\033["<<1<<"K";
-                cout<<"\033["<<38<<";"<<0<<"H"<<"Command Mode :"<<buffer;   
+                cout<<"\b \b";
+                buffer[i]='\0';
                 i--;
-            }
-
+                }
+          
             
-            //gotoxy(38,2);
-            //cout<<buffer;
-            //cout<<"\033["<<38<<";"<<1<<"H"<<":                   ";
-            //cout<<"hjgdhsfdagd";
         }
         //escape
         if(ch==27){
@@ -513,17 +512,18 @@ void command_mode(string buff){
             file1[j]='\0';
             files.push_back(file1);
             //string case;
-            
+            cout<<" source: "<<files[1]<<"destination: "<<files[2];
             if(files[0]=="copy")
-                option='c';
+                option ='c';
             else if(files[0]=="move")
-                option='m';
+                option ='m';
 
-            switch(x){
-                c: copy_test(files);
-                   break;
-                m: move(files);
-                   break;
+            switch(option){
+                case 'c' : // printf("=======inside copy========");
+                            copy_test(files);
+                            break;
+                case 'm' : move(files);
+                           break;
 
             }
 

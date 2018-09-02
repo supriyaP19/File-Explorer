@@ -10,13 +10,13 @@
 #include <vector>
 #include <stdint.h>
 #include <sys/stat.h>
-#include "copy_test.h"
+//#include "copy_test.h"
 using namespace std;
 string dest1;
 string dest;
 struct stat thestat1;
 void copyfile(string fstrpath,string dest2);
-void copy_test(vector<string> files);
+vector<string> files;
 
 static int copy_dir(const char *fpath, const struct stat *sb,int tflag, struct FTW *ftwbuf)
 {	
@@ -27,7 +27,7 @@ static int copy_dir(const char *fpath, const struct stat *sb,int tflag, struct F
 		dest1 = dest1+"/"+fstrpath;
 		cout<<"inside copy_dir after concatenation : "<<dest1<<endl;
 		const int dir_err = mkdir(dest1.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-
+		
 		cout<<" dir_err "<<dir_err;
 		dest1=dest;
 
@@ -40,11 +40,12 @@ static int copy_dir(const char *fpath, const struct stat *sb,int tflag, struct F
     
 }
 
-void copy_test(vector<string> files)
-{	cout<<"heyyyyyyyyyyyyyyyy";
-	// files.push_back("copy");
-	// files.push_back("d11");
-	// files.push_back("dest_folder");
+int main()
+{	
+	//cout<<"heyyyyyyyyyyyyyyyy";
+	files.push_back("copy");
+	files.push_back("d11");
+	files.push_back("dest_folder");
 	dest1 = files[files.size()-1];
 	dest=dest1;
 	int flags = 0;
@@ -57,11 +58,11 @@ void copy_test(vector<string> files)
     	}
 
 	}
+	return 0;
 }
 
 void copyfile(string fstrpath,string dest2){
 	dest2 = dest2+ "/" + fstrpath;
-	cout<<"dest 2 "<<dest2<<endl;
 	stat(fstrpath.c_str(), &thestat1);
     chmod(dest2.c_str(),thestat1.st_mode);
 	std::ifstream  src(fstrpath, std::ios::binary);
