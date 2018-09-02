@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
+#include <vector>
 #include <iostream>
 #include <time.h>
 #include <pwd.h>
@@ -12,9 +13,11 @@
 #include <grp.h>
 #include <stack>
 #include <sys/ioctl.h>
+#include <linux/limits.h>
 #define gotoxy(x,y) printf("%s%d%s%d%s","\033[",x,";",y,"H");
 using namespace std;
 struct winsize window;
+char option;
 
 int pos_of_x=1;
 struct stat thestat;
@@ -25,7 +28,7 @@ int new_x=0;
 
 void cursor_and_flag(struct dirent **thefile,char [],int n);
 void ls_command(char [],int start);
-void command_mode();
+void command_mode(string);
 
 stack <string> goback;
 stack <string> goforward;
@@ -174,14 +177,16 @@ void cursor_and_flag(struct dirent **thefile,char path[],int n){
                 fprintf(stderr,"could not set attributes\n");
         }
         int z,len,temp,flag=0;
+        string buff = "Normal Mode";
+        // buff = buf;
        cout<<"\033["<<37<<";"<<1<<"H"<<"--------------------------------------------------------------------------------------------------------------------------------------------"<<endl;
-        cout<<"\033["<<38<<";"<<1<<"H"<<"Normal Mode:";
+        cout<<"\033["<<38<<";"<<1<<"H"<<buff;
         cout<<"\033["<<x<<";"<<y<<"H";
         while(1){
                 ch = getchar();
 
                 if(ch==58){
-                    command_mode();
+                    command_mode(buff);
 
                 }   
                 // else if(ch=='\033'){
@@ -380,7 +385,7 @@ tcsetattr(fileno(input),TCSANOW,&initial_settings);
 
 }
 
-void command_mode(){
+void command_mode(string buff){
 
     struct termios initial_settings, new_settings;
     FILE *input;
@@ -389,20 +394,172 @@ void command_mode(){
     output = fopen("/dev/tty", "w");
     tcgetattr(fileno(input),&initial_settings);
     new_settings = initial_settings;
+    new_settings.c_lflag &= ~ECHO;
+    new_settings.c_lflag &= ~ICANON;
+   // new_settings.c_cc[VMIN] = 1;
+    //new_settings.c_cc[VTIME] = 0;
+    //new_settings.c_cc[VTIME] = 0;
 
-
-    new_settings.c_lflag |= ECHO;
     tcsetattr(fileno(input), TCSANOW, &new_settings);
+    //printf("\033[H\033[J");
     cout<<"\033["<<37<<";"<<1<<"H"<<"--------------------------------------------------------------------------------------------------------------------------------------------"<<endl;
-    cout<<"\033["<<38<<";"<<1<<"H"<<"command Mode:";
-    cout<<"\033["<<38<<";"<<14<<"H";
+    // buff[0] = ':';
+    // buff[1] = '\0';
+   // cout<<"\033["<<38<<";"<<1<<"H"<<flush;
+   cout<<"\033["<<38<<";"<<1<<"H"<<"                                                                                                                            ";
+    cout<<"\033["<<38<<";"<<0<<"H"<<"Command Mode :";
+    gotoxy(38,15);
+    //cout<<"\033["<<38<<";"<<14<<"H";
+    char buffer[PATH_MAX];
+    buffer[0]='\0';
 
-    char ch;
-    do{
+    char ch,nul_char;
+    int i=0;
+    while(1){
+        new_settings.c_cc[VMIN] = 1;
+        new_settings.c_cc[VTIME] = 0;
+        new_settings.c_lflag &= ~ECHO;
+        new_settings.c_lflag &= ~ICANON;
+        tcsetattr(fileno(input), TCSANOW, &new_settings);
         ch=getchar();
-    }while(ch!='\033');
+        if(ch!=27){
+            cout<<ch;
+            buffer[i++]=ch;
+            buffer[i]='\0';
+            // buffer=buffer+ch;
+        }
+        //backspace
+        if(ch==127){
+            //fflush(stdout);
+
+            if(i>0){
+                buffer[i-2]='\0';
+               // cout<<"\033["<<38<<";"<<10<<"H"<<buffer;
+                cout<<"\033["<<1<<"K";
+                cout<<"\033["<<38<<";"<<0<<"H"<<"Command Mode :"<<buffer;   
+                i--;
+            }
+
+            
+            //gotoxy(38,2);
+            //cout<<buffer;
+            //cout<<"\033["<<38<<";"<<1<<"H"<<":                   ";
+            //cout<<"hjgdhsfdagd";
+        }
+        //escape
+        if(ch==27){
+            //cin.clear();
+             new_settings.c_cc[VMIN] = 0;
+             new_settings.c_cc[VTIME] = 1;
+              //new_settings.c_lflag &= ~ECHO;
+               tcsetattr(fileno(input), TCSANOW, &new_settings);
+             ch=getchar();
+             //new_settings.c_lflag &= ~ECHO;
+             if(ch==-1){
+                new_settings.c_cc[VMIN] = 1;
+                new_settings.c_cc[VTIME] = 0;
+                new_settings.c_lflag &= ~ECHO;
+                tcsetattr(fileno(input), TCSANOW, &new_settings);
+                cout<<"\033["<<1<<";"<<1<<"H";
+                //cin.clear();
+                //delete[] buffer;
+                return;
+             }
+             else{
+                new_settings.c_cc[VMIN] = 1;
+                new_settings.c_cc[VTIME] = 0;
+                new_settings.c_lflag &= ~ECHO;
+                ch=getchar();
+
+               tcsetattr(fileno(input), TCSANOW, &new_settings);
+               continue;
+             }
+             
+           
+        }
+         if(ch==10){
+            //cout<<"\033["<<38<<";"<<i<<"H";
+           // cout<<buffer;
+            std::vector<string>files;
+            char file1[PATH_MAX];
+            int i=0,j=0;
+            do{
+                
+                if(buffer[i]!=' ' && buffer[i]!='\\'){
+                    file1[j]=buffer[i];
+                    cout<<"file1:"<<file1[j]<<" buffer:"<<buffer[i]<<endl;
+                    j++;
+                    i++;
+                }
+                else if(buffer[i]=='\\' && buffer[i+1]==' '){
+                    i++;
+                    file1[j]=buffer[i];
+                    cout<<"file1:"<<file1[j]<<" buffer: "<<buffer[i]<<endl;
+                    i++;    
+                    j++;
+                    
+                }
+                else if(buffer[i]==' '){
+                    file1[j]='\0';
+                    files.push_back(file1);
+                    cout<<" file1: "<<file1;
+                    cout<<" files current: "<<files.back();
+                    j=0;
+                    i++;
+                }
+                
+            }while(buffer[i]!='\0');
+
+            file1[j]='\0';
+            files.push_back(file1);
+            //string case;
+            
+            if(files[0]=="copy")
+                option='c';
+            else if(files[0]=="move")
+                option='m';
+
+            switch(x){
+                c: copy_test(files);
+                   break;
+                m: move(files);
+                   break;
+
+            }
+
+            }
+           
+            
+            
+        }
+       
+
+     
+
+    }
+       
+    
 
     
 
 
-}
+
+
+// void goto_location(char location[]){
+//     char loc[];
+//     if(location=='/'){
+//         goforward.push(path);
+//         loc[0]='.';
+//         loc[1]='\0';
+//         ls_command(loc);
+//     }
+//     else{
+//         goback.push(path);
+//         ls_command(location);
+//     }
+
+// }
+
+// void search(){
+
+// }
